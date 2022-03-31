@@ -374,8 +374,8 @@ def main():
         ptvsd.wait_for_attach()
     # Setup CUDA, GPU & distributed training
     if args.local_rank == -1 or args.no_cuda:  # TODO GPU内存溢出，修改训练方式CPU训练
-        # device = torch.device("cuda" if torch.cuda.is_available() and not args.no_cuda else "cpu")
-        device = torch.device('cpu')
+        device = torch.device("cuda" if torch.cuda.is_available() and not args.no_cuda else "cpu")
+        # device = torch.device('cpu')
         args.n_gpu = torch.cuda.device_count()
     else:  # Initializes the distributed backend which will take care of sychronizing nodes/GPUs
         torch.cuda.set_device(args.local_rank)
