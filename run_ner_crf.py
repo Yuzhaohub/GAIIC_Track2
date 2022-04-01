@@ -121,6 +121,8 @@ def train(args, train_dataset, model, tokenizer):
     if args.save_steps == -1 and args.logging_steps == -1:
         args.logging_steps = len(train_dataloader)
         args.save_steps = len(train_dataloader)
+    
+    cnt = -1 # 
     for epoch in range(int(args.num_train_epochs)):
         pbar.reset()
         pbar.epoch_start(current_epoch = epoch)
@@ -164,8 +166,14 @@ def train(args, train_dataset, model, tokenizer):
                         # Only evaluate when single GPU otherwise metrics may not average well
                         evaluate(args, model, tokenizer)
                 if args.local_rank in [-1, 0] and args.save_steps > 0 and global_step % args.save_steps == 0:  # 模型保存
+                    # 只保留四个模型
+                    if cnt > 4:
+                        cnt = 0
+                    else:
+                        cnt += 1
+                    
                     # Save model checkpoint
-                    output_dir = os.path.join(args.output_dir, "checkpoint-{}".format(global_step))
+                    output_dir = os.path.join(args.output_dir, "checkpoint-{}".format(cnt))
                     if not os.path.exists(output_dir):
                         os.makedirs(output_dir)
                     model_to_save = (
