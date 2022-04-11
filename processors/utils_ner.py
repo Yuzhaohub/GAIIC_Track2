@@ -42,8 +42,11 @@ class DataProcessor(object):
                         words = []
                         labels = []
                 else:
-                    splits = line.split(" ")
-                    words.append(splits[0])
+                    # 由于划分train和dev导致的分割标识符不一致的问题
+#                     splits = line.split(" ")
+#                     words.append(splits[0])
+                    splits = line.split("\t")
+                    words.append(splits[0].replace("\n", ""))
                     if set_type == 'test':
                         labels.append('O')
                     else:
