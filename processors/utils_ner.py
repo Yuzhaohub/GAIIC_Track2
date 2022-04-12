@@ -46,7 +46,7 @@ class DataProcessor(object):
 #                     splits = line.split(" ")
 #                     words.append(splits[0])
                     splits = line.split("\t")
-                    words.append(splits[0].replace("\n", ""))
+                    words.append(splits[0].replace("\n", "").lower())
                     if set_type == 'test':
                         labels.append('O')
                     else:
