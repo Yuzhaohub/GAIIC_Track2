@@ -70,6 +70,9 @@ def get_argparse():
                         help = "Total number of training epochs to perform.")
     parser.add_argument("--max_steps", default = -1, type = int,
                         help = "If > 0: set total number of training steps to perform. Override num_train_epochs.", )
+    
+    parser.add_argument("--attack_train", default = 'fgm', type = str,
+                        help = 'Whether to attacking train')
 
     parser.add_argument("--warmup_proportion", default = 0.1, type = float,
                         help = "Proportion of training to perform linear learning rate warmup for,E.g., 0.1 = 10% of training.")
