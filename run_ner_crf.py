@@ -17,6 +17,7 @@ from TorchCRF import CRF
 
 from transformers import WEIGHTS_NAME, BertConfig, get_linear_schedule_with_warmup, AdamW, BertTokenizer
 from models.bert_for_ner import BertCrfForNer
+from models.attack_utils import FGM, PGD
 from processors.utils_ner import get_entities
 from processors.ner_seq import convert_examples_to_features
 from processors.ner_seq import ner_processors as processors
@@ -87,6 +88,18 @@ def train(args, train_dataset, model, tokenizer):
         model = torch.nn.parallel.DistributedDataParallel(model, device_ids = [args.local_rank],
                                                           output_device = args.local_rank,
                                                           find_unused_parameters = True)
+     # 文本对抗训练：在模型分布之后，内部通过model.module进行控制
+    fgm, pgd = None, None
+    attack_train_mode = args.attack_train.lower()
+    if attack_train_mode == 'fgm':  # 模型是否进行对抗训练，主要通过操作Embedding
+        fgm = FGM(model = model)
+    elif attack_train_mode == 'pgd':
+        pgd = PGD(model = model)
+
+    pgd_k = 3
+    
+    
+    
     # Train!
     logger.info("***** Running training *****")
     logger.info("  Num examples = %d", len(train_dataset))
@@ -148,6 +161,38 @@ def train(args, train_dataset, model, tokenizer):
                     scaled_loss.backward()
             else:
                 loss.backward()
+            
+            if fgm is not None:
+                fgm.attack()
+
+                loss_adv = model(**inputs)[0]
+
+                if args.n_gpu > 1:
+                    loss_adv = loss_adv.mean()
+
+                loss_adv.backward()
+
+                fgm.restore()
+            elif pgd is not None:
+                pgd.backup_grad()
+
+                for _t in range(pgd_k):
+                    pgd.attack(is_first_attack = (_t == 0))
+
+                    if _t != pgd_k - 1:
+                        model.zero_grad()
+                    else:
+                        pgd.restore_grad()
+
+                    loss_adv = model(**inputs)[0]
+
+                    if args.n_gpu > 1:
+                        loss_adv = loss_adv.mean()
+
+                    loss_adv.backward()
+
+                pgd.restore()
+            
             pbar(step, {'loss': loss.item()})
             tr_loss += loss.item()
             if (step + 1) % args.gradient_accumulation_steps == 0:
